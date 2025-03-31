@@ -1,31 +1,25 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
-
 const app = express();
+const path = require("path");
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static("client")); // dossier frontend
+// Middleware pour servir les fichiers statiques
+app.use(express.static(path.join(__dirname, "client")));
 
-// Exemple de route test
+// Routes
+app.use("/temoignages", require("./routes/tem.js")); // Témoignages
+app.use("/contact", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/contact.html"));
+});
+app.use("/transport", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/transport.html"));
+});
+app.use("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/admin.html"));
+});
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/client/index.html");
+  res.sendFile(path.join(__dirname, "client/index.html"));
 });
 
-// Import des routes (si tu en as)
-const temoignagesRoute = require("./routes/tem.js");
-app.use("/api/temoignages", temoignagesRoute);
-
-// Connexion MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connecté"))
-  .catch((err) => console.error("Erreur MongoDB:", err));
-
-// Lancer serveur
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Serveur en ligne sur le port ${PORT}`);
-});
+// Lancement du serveur
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Serveur en ligne sur le port ${PORT}`));
