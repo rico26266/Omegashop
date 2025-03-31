@@ -1,52 +1,35 @@
-const express = require('express');
-const multer = require('multer');
-const mongoose = require('mongoose');
-const path = require('path');
-const cors = require('cors');
+
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
+const port = process.env.PORT || 3000;
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/client', express.static(path.join(__dirname, '../client')));
 
-mongoose.connect('mongodb://localhost:27017/tissus', { useNewUrlParser: true, useUnifiedTopology: true });
+// Static files for frontend
+app.use("/client", express.static(path.join(__dirname, "../client")));
+app.use("/Tmp", express.static(path.join(__dirname, "Tmp")));
 
-const Tissu = require('./models/Tissu');
-const commentaireRoutes = require('./routes/comments');
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB connecté avec succès"))
+.catch((err) => console.error("Erreur de connexion MongoDB :", err));
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
+// Routes
+const tissuRoutes = require("./routes/tissuRoutes");
+app.use("/api", tissuRoutes);
 
-const upload = multer({ storage: storage });
-
-app.post('/api/admin/tissu', upload.single('image'), async (req, res) => {
-  const { numero, prix, description, categorie, categorie_personnalisee } = req.body;
-  const image = '/uploads/' + req.file.filename;
-  const finalCategorie = (categorie === 'AUTRE' && categorie_personnalisee) ? categorie_personnalisee : categorie;
-  const tissu = new Tissu({ numero, prix, description, image, categorie: finalCategorie });
-  await tissu.save();
-  res.redirect('/client/admin.html?success=true');
-});
-
-app.get('/api/tissus', async (req, res) => {
-  const tissus = await Tissu.find().sort({ _id: -1 });
-  res.json(tissus);
-});
-
-app.use('/api/commentaires', commentaireRoutes);
-
-app.listen(3000, () => console.log('Serveur lancé sur http://localhost:3000'));
-
-
-app.get('/api/tissus/:id', async (req, res) => {
-  const tissu = await Tissu.findById(req.params.id);
-  res.json(tissu);
+// Lancer le serveur
+app.listen(port, () => {
+  console.log(`Serveur lancé sur le port ${port}`);
 });
